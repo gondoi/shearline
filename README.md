@@ -8,7 +8,9 @@ Dependencies
 
 Python CloudFiles and Boto are required.  To install the dependencies, use:
 
+```
 $ sudo apt-get install python-cloudfiles python-boto
+```
 
 Running
 =======
