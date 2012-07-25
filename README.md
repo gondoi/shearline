@@ -3,6 +3,15 @@ Overview
 
 Shearline is an application to move files between [Amazon S3](http://aws.amazon.com/s3/) buckets and [Rackspace Cloud Files](http://www.rackspace.com/cloud/cloud_hosting_products/files/) containers.
 
+Dependencies
+============
+
+Python CloudFiles and Boto are required.  To install the dependencies, use:
+
+```
+$ sudo apt-get install python-cloudfiles python-boto
+```
+
 Running
 =======
 
