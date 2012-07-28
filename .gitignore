@@ -1,1 +1,6 @@
 environmentvars
+*.lock
+*.pyc
+*.egg-info*
+*.swp
+.#*
