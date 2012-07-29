@@ -41,31 +41,39 @@ class Shearline(object):
 
 
     def synchronize(self, key):
-        if self.verbose:
-            print 'Started: %s' % key
-    
-        s3 = S3Connection(is_secure=True, anon=True)
-        bucket = s3.get_bucket(self.s3_bucket)
-        item = bucket.get_key(key)
-        cf = cloudfiles.get_connection(self.cf_username, self.cf_apikey)
-        container = cf.create_container(self.cf_container)
-        cf_object = container.create_object(key)
-    
-        if item.size > 0:
-            if cf_object.etag is None or item.etag != '"%s"' % cf_object.etag:
-                cf_object.send(item)
-                status = "Created on Cloud Files: %s" % item.key
-            else:
-                status = "Already exists and is up-to-date: %s" % item.key
-        else:
-            status = "Skipping empty item: %s" %item.key
-    
-        if self.verbose:
-            print status
+        while True:
+            try:
+                if self.verbose:
+                    print 'Started: %s' % key
+
+                s3 = S3Connection(is_secure=True, anon=True)
+                bucket = s3.get_bucket(self.s3_bucket)
+                item = bucket.get_key(key)
+                cf = cloudfiles.get_connection(self.cf_username, self.cf_apikey)
+                container = cf.create_container(self.cf_container)
+                cf_object = container.create_object(key)
+
+                if item.size > 0:
+                    if cf_object.etag is None or item.etag != '"%s"' % cf_object.etag:
+                        cf_object.send(item)
+                        status = "Created on Cloud Files: %s" % item.key
+                    else:
+                        status = "Already exists and is up-to-date: %s" % item.key
+                else:
+                    status = "Skipping empty item: %s" %item.key
+
+                if self.verbose:
+                    print status
+
+                break
+
+            except Exception, e:
+                print "ERROR: %s" % e
+                time.sleep(10)
 
         return status
 
-    
+
     def process(self, total, job_queue, result_queue):
         signal.signal(signal.SIGINT, signal.SIG_IGN)
         while not job_queue.empty():
@@ -73,12 +81,12 @@ class Shearline(object):
                 if not self.quiet:
                     progress = 100 - float(job_queue.qsize()) / total * 100
                     print "Progress: %.2f%%" % progress
-    
+
                 job = job_queue.get(block=False)
                 result_queue.put(self.synchronize(job))
             except Queue.Empty:
                 pass
-    
+
 
     def main(self, argv):
         args = self.parser.parse_args(argv)
@@ -103,24 +111,24 @@ class Shearline(object):
         if not self.cf_container:
             raise CommandError("You must provide a Cloud Files container, either via "
                                "--container or via env[CF_CONTAINER]")
-    
+
         job_queue = multiprocessing.Queue()
         result_queue = multiprocessing.Queue()
-    
+
         s3 = S3Connection(is_secure=True, anon=True)
         bucket = s3.get_bucket(self.s3_bucket)
-    
+
         for item in bucket.list():
             job_queue.put(item.key)
         total = job_queue.qsize()
-    
+
         workers = []
         for i in range(self.processes):
             tmp = multiprocessing.Process(target=self.process,
                                           args=(total, job_queue, result_queue))
             tmp.start()
             workers.append(tmp)
-    
+
         try:
             for worker in workers:
                 worker.join()
@@ -128,11 +136,11 @@ class Shearline(object):
             for worker in workers:
                 worker.terminate()
                 worker.join()
-    
+
         if self.verbose:
             while not result_queue.empty():
                 print result_queue.get(block=False)
-    
+
 
 def main():
     try:
