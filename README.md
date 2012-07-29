@@ -9,7 +9,7 @@ Installation
 To install Shearline, run:
 
 ```
-$ python setup.py install
+# python setup.py install
 ```
 
 Running
