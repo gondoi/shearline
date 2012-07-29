@@ -4,7 +4,7 @@ python_libraries = ['boto', 'python-cloudfiles']
 
 setup(
     name='shearline',
-    packages=['shearline'],
+    packages=['.'],
     entry_points={
         'console_scripts': [
             'shearline = shearline:main',
