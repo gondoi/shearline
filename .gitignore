@@ -4,3 +4,5 @@ environmentvars
 *.egg-info*
 *.swp
 .#*
+\#*
+*~
