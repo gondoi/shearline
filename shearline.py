@@ -9,6 +9,7 @@ import syslog
 import cloudfiles
 
 from boto.s3.connection import S3Connection
+from boto.exception import S3ResponseError
 from boto.s3.key import Key
 
 class CommandError(Exception):
@@ -41,6 +42,8 @@ class Shearline(object):
 
 
     def synchronize(self, key):
+        status = None
+
         while True:
             try:
                 syslog.syslog('Synchronizing item: %s' % key)
@@ -67,6 +70,9 @@ class Shearline(object):
                 if self.verbose:
                     print status
 
+                break
+
+            except S3ResponseError:
                 break
 
             except Exception, e:
