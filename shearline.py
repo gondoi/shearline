@@ -5,7 +5,7 @@ import signal
 import time
 import Queue
 import argparse
-
+import syslog
 import cloudfiles
 
 from boto.s3.connection import S3Connection
@@ -43,6 +43,7 @@ class Shearline(object):
     def synchronize(self, key):
         while True:
             try:
+                syslog.syslog('Synchronizing item: %s' % key)
                 if self.verbose:
                     print 'Started: %s' % key
 
@@ -62,12 +63,14 @@ class Shearline(object):
                 else:
                     status = "Skipping empty item: %s" %item.key
 
+                syslog.syslog(status)
                 if self.verbose:
                     print status
 
                 break
 
             except Exception, e:
+                syslog.syslog(syslog.LOG_ERR, 'ERROR: %s' % e)
                 print "ERROR: %s" % e
                 time.sleep(10)
 
@@ -112,15 +115,18 @@ class Shearline(object):
             raise CommandError("You must provide a Cloud Files container, either via "
                                "--container or via env[CF_CONTAINER]")
 
+        syslog.syslog('Processing started')
         job_queue = multiprocessing.Queue()
         result_queue = multiprocessing.Queue()
 
+        syslog.syslog('Connecting to S3 bucket: %s' % self.s3_bucket)
         s3 = S3Connection(is_secure=True, anon=True)
         bucket = s3.get_bucket(self.s3_bucket)
 
         for item in bucket.list():
             job_queue.put(item.key)
         total = job_queue.qsize()
+        syslog.syslog('Total size of S3 bucket: %s items' % total)
 
         workers = []
         for i in range(self.processes):
@@ -140,6 +146,8 @@ class Shearline(object):
         if self.verbose:
             while not result_queue.empty():
                 print result_queue.get(block=False)
+
+        syslog.syslog('Processing completed')
 
 
 def main():
