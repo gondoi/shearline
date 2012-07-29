@@ -21,6 +21,8 @@ def env(e):
 class Shearline(object):
     def __init__(self):
         self.parser = argparse.ArgumentParser()
+        self.parser.add_argument("-q", "--quiet", action="store_true",
+                                 help="disable progress output")
         self.parser.add_argument("-v", "--verbose", action="store_true",
                                  help="enable verbose output")
         self.parser.add_argument("--bucket", default=env('S3_BUCKET'),
@@ -68,8 +70,9 @@ class Shearline(object):
         signal.signal(signal.SIGINT, signal.SIG_IGN)
         while not job_queue.empty():
             try:
-                progress = 100 - float(job_queue.qsize()) / total * 100
-                print "Progress: %.2f%%" % progress
+                if not self.quiet:
+                    progress = 100 - float(job_queue.qsize()) / total * 100
+                    print "Progress: %.2f%%" % progress
     
                 job = job_queue.get(block=False)
                 result_queue.put(self.synchronize(job))
@@ -86,6 +89,7 @@ class Shearline(object):
         self.cf_container = args.container
         self.processes = args.processes
         self.verbose = args.verbose
+        self.quiet = args.quiet
 
         if not self.s3_bucket:
             raise CommandError("You must provide an S3 bucket, either via "
@@ -121,13 +125,13 @@ class Shearline(object):
             for worker in workers:
                 worker.join()
         except KeyboardInterrupt:
-            print 'parent received ctrl-c'
             for worker in workers:
                 worker.terminate()
                 worker.join()
     
-        while not result_queue.empty():
-            print result_queue.get(block=False)
+        if self.verbose:
+            while not result_queue.empty():
+                print result_queue.get(block=False)
     
 
 def main():
