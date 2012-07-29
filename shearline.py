@@ -5,11 +5,18 @@ import os
 import signal
 import time
 import Queue
+import argparse
 
 import cloudfiles
 
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
+
+class CommandError(Exception):
+    pass
+
+def env(e):
+    return os.environ.get(e, '')
 
 def synchronize(key):
     print 'Started: %s' % key
@@ -47,6 +54,29 @@ def process(total, job_queue, result_queue):
             pass
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-v", "--verbose", help="enable verbose output",
+                        action="store_true")
+    parser.add_argument("--bucket", default=os.environ.get('S3_BUCKET', ''),
+                        help='defaults to env[S3_BUCKET]')
+    parser.add_argument("--username", default=os.environ.get('CF_USERNAME', ''),
+                        help='defaults to env[CF_USERNAME]')
+    parser.add_argument("--apikey", default=os.environ.get('CF_APIKEY', ''),
+                        help='defaults to env[CF_APIKEY]')
+    parser.add_argument("--container", default=os.environ.get('CF_CONTAINER', ''),
+                        help='defaults to env[CF_CONTAINER]')
+    parser.add_argument("--processes", type=int, default=1,
+                        help='number of synchronization processes at a time')
+    args = parser.parse_args()
+
+    user, apikey = args.username, args.apikey
+    if not user:
+        raise CommandError("You must provide a username, either via "
+                           "--username or via env[CLOUD_SERVERS_USERNAME]")
+    if not apikey:
+        raise CommandError("You must provide an API key, either via "
+                           "--apikey or via env[CLOUD_SERVERS_API_KEY]")
+
     job_queue = multiprocessing.Queue()
     result_queue = multiprocessing.Queue()
 
