@@ -1,4 +1,5 @@
 environmentvars
+dist
 *.lock
 *.pyc
 *.egg-info*
