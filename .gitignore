@@ -1,1 +1,10 @@
 environmentvars
+dist
+build
+*.lock
+*.pyc
+*.egg-info*
+*.swp
+.#*
+\#*
+*~
